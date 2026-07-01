@@ -1,12 +1,12 @@
-# ADR: torch/cuda runtime surface
+# `torch/cuda`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/cuda`
-- Decision: Keep `torch.cuda` as a Python policy layer that lazily exposes allocator, stream, RNG, graph, and profiler features from compiled CUDA bindings.
-- Primary entrypoints: `is_available`, `_lazy_init`, `Stream`, `Event`, `CUDAGraph`, `memory_stats`, `empty_cache`, `manual_seed_all`
-- Evidence: `src/torch/cuda/__init__.py`, `src/torch/cuda/memory.py`, `src/torch/cuda/graphs.py`, `src/torch/cuda/random.py`, `src/torch/cuda/profiler.py`
-- Caveats: This repository is analyzed under CPU-only constraints, so CUDA-specific behavior is source-verified rather than runtime-verified.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torch/cuda/__init__.py`](src/torch/cuda/__init__.py) - lazy initialization, availability checks, and namespace assembly.
-- [`src/torch/cuda/memory.py`](src/torch/cuda/memory.py) - caching allocator controls, memory statistics, and pool helpers.
-- [`src/torch/cuda/graphs.py`](src/torch/cuda/graphs.py) - CUDA graph capture, replay, and graph-pool integration.
-- [`src/torch/cuda/random.py`](src/torch/cuda/random.py) - device RNG seeding and generator coordination.
-- [`src/torch/cuda/profiler.py`](src/torch/cuda/profiler.py) - profiler start/stop wrappers over CUDA runtime bindings.
+
+| File | Purpose |
+|---|---|
+| `src/torch/cuda/__init__.py` | lazy initialization, availability checks, and namespace assembly |
+| `src/torch/cuda/memory.py` | caching allocator controls, memory statistics, and pool helpers |
+| `src/torch/cuda/graphs.py` | CUDA graph capture, replay, and graph-pool integration |
+| `src/torch/cuda/random.py` | device RNG seeding and generator coordination |
+| `src/torch/cuda/profiler.py` | profiler start/stop wrappers over CUDA runtime bindings |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The package exposes device discovery and initialization through `is_available()`
 
 ## Dependencies
 
-`torch.cuda` depends on the compiled extension contract defined by [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in), especially the `Stream`, `Event`, and generator types. Its allocator-facing helpers wrap the native caching allocator described by [`src/c10/cuda/CUDACachingAllocator.cpp`](src/c10/cuda/CUDACachingAllocator.cpp) and the device abstractions in [`src/c10/core/Allocator.h`](src/c10/core/Allocator.h). Its observability path also leans on [`src/aten/src/ATen/record_function.h`](src/aten/src/ATen/record_function.h) and CUDA profiler hooks under [`src/torch/csrc/profiler`](src/torch/csrc/profiler).
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/_C](torch/_C/ADR.md) | depends-on | `Stream`, `Event`, generator types |
+| [c10/cuda](c10/cuda/ADR.md) | depends-on | native caching allocator wrapper |
+| [c10/core](c10/core/ADR.md) | depends-on | device and allocator abstractions |
+| [torch/csrc/profiler](torch/csrc/profiler/ADR.md) | depends-on | CUDA profiler hooks |
 
 ## Runtime Behaviour
 

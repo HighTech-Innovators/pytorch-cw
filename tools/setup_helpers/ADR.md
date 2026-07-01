@@ -1,12 +1,12 @@
-# ADR: tools/setup_helpers build orchestration helpers
+# `tools/setup_helpers`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/tools/setup_helpers`
-- Decision: Keep Python build orchestration logic in reusable helpers that select tools, manage cache invalidation, and generate native build inputs for `pip install -e .` flows.
-- Primary entrypoints: `CMake`, environment flag helpers, code-generation helpers, version-header generation
-- Evidence: `src/tools/setup_helpers/cmake.py`, `src/tools/setup_helpers/env.py`, `src/tools/setup_helpers/generate_code.py`, `src/tools/setup_helpers/gen_version_header.py`
-- Caveats: The build policy in this repository requires these helpers to be reached through editable pip install rather than ad hoc setup commands.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/tools/setup_helpers/cmake.py`](src/tools/setup_helpers/cmake.py) - CMake discovery, cache handling, and generation.
-- [`src/tools/setup_helpers/env.py`](src/tools/setup_helpers/env.py) - environment-derived build settings.
-- [`src/tools/setup_helpers/generate_code.py`](src/tools/setup_helpers/generate_code.py) - code-generation orchestration helpers.
-- [`src/tools/setup_helpers/gen_version_header.py`](src/tools/setup_helpers/gen_version_header.py) - generated version-header support.
-- [`src/tools/setup_helpers/cmake_utils.py`](src/tools/setup_helpers/cmake_utils.py) - cache parsing and CMake value helpers.
+
+| File | Purpose |
+|---|---|
+| `src/tools/setup_helpers/cmake.py` | CMake discovery, cache handling, and generation |
+| `src/tools/setup_helpers/env.py` | environment-derived build settings |
+| `src/tools/setup_helpers/generate_code.py` | code-generation orchestration helpers |
+| `src/tools/setup_helpers/gen_version_header.py` | generated version-header support |
+| `src/tools/setup_helpers/cmake_utils.py` | cache parsing and CMake value helpers |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The directory exposes helper classes and functions for build scripts rather than
 
 ## Dependencies
 
-`cmake.py` depends directly on [`src/tools/setup_helpers/env.py`](src/tools/setup_helpers/env.py) for `BUILD_DIR`, platform flags, and negative-env parsing. The directory also works with [`src/torchgen`](src/torchgen) and [`src/tools/autograd`](src/tools/autograd) because native build generation must schedule those codegen steps before C++ compilation. At the project level it is coupled to [`src/setup.py`](src/setup.py) and CMake definitions under [`src/CMakeLists.txt`](src/CMakeLists.txt).
+
+| Component | Direction | Nature |
+|---|---|---|
+| `tools/setup_helpers/env.py` | depends-on | `BUILD_DIR`, platform flags, negative-env parsing |
+| [torchgen](torchgen/ADR.md) | coordinates | schedules operator codegen before C++ compilation |
+| [tools/autograd](tools/autograd/ADR.md) | coordinates | schedules autograd codegen step |
+| `setup.py` / `CMakeLists.txt` | depends-on | project-level build definitions |
 
 ## Runtime Behaviour
 

@@ -1,12 +1,12 @@
-# ADR: functorch transform compatibility layer
+# `functorch`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/functorch`
-- Decision: Preserve `functorch` as a lightweight compatibility namespace that re-exports transform APIs now implemented under `torch._functorch` and related core systems.
-- Primary entrypoints: `vmap`, `grad`, `grad_and_value`, `jacrev`, `jacfwd`, `hessian`, `make_functional`, `make_fx`, experimental `cond` and `map`
-- Evidence: `src/functorch/__init__.py`, `src/functorch/experimental/control_flow.py`, `src/functorch/README.md`, `src/torch/_C/_functorch.pyi`
-- Caveats: The top-level package is intentionally thin, so many substantive mechanics live outside this directory.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,10 +14,13 @@
 
 ## Key Files
 
-- [`src/functorch/__init__.py`](src/functorch/__init__.py) - top-level transform exports.
-- [`src/functorch/experimental/control_flow.py`](src/functorch/experimental/control_flow.py) - experimental control-flow wrappers.
-- [`src/functorch/README.md`](src/functorch/README.md) - transform goals and use cases.
-- [`src/torch/_C/_functorch.pyi`](src/torch/_C/_functorch.pyi) - native dynamic-layer hooks used by transform implementations.
+
+| File | Purpose |
+|---|---|
+| `src/functorch/__init__.py` | top-level transform exports |
+| `src/functorch/experimental/control_flow.py` | experimental control-flow wrappers |
+| `src/functorch/README.md` | transform goals and use cases |
+| `src/torch/_C/_functorch.pyi` | native dynamic-layer hooks used by transform implementations |
 
 ## Public Interface
 
@@ -25,7 +28,13 @@ The top-level package exposes `vmap`, `grad`, `grad_and_value`, `jacrev`, `jacfw
 
 ## Dependencies
 
-The namespace depends on implementations in [`src/torch/_functorch`](src/torch/_functorch) and on compiled transform hooks surfaced through [`src/torch/_C/_functorch.pyi`](src/torch/_C/_functorch.pyi). It also intersects with [`src/torch/export`](src/torch/export) and [`src/torch/fx`](src/torch/fx) through `make_fx` and transform tracing, and with Chapter 06 autograd machinery through gradient-oriented transforms.
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/_functorch](torch/_functorch/ADR.md) | depends-on | actual transform implementations re-exported here |
+| [torch/_C](torch/_C/ADR.md) | depends-on | compiled transform hooks (`_functorch.pyi`) |
+| [torch/fx](torch/fx/ADR.md) | depends-on | `make_fx` symbolic tracing |
+| [torch/export](torch/export/ADR.md) | intersects | transform-plus-export tracing overlap |
 
 ## Runtime Behaviour
 

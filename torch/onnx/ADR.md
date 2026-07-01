@@ -1,12 +1,12 @@
-# ADR: torch/onnx export bridge
+# `torch/onnx`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/onnx`
-- Decision: Keep `torch.onnx` as a compatibility bridge that defaults to the modern `torch.export`-based exporter while retaining TorchScript-oriented utilities and symbolic registries.
-- Primary entrypoints: `export`, `ONNXProgram`, `is_in_onnx_export`, verification helpers, symbolic opset modules
-- Evidence: `src/torch/onnx/__init__.py`, `src/torch/onnx/utils.py`, `src/torch/onnx/verification.py`, `src/torch/onnx/symbolic_helper.py`
-- Caveats: Verification support depends on external runtimes outside this tree, so this ADR only grounds the PyTorch-side orchestration.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torch/onnx/__init__.py`](src/torch/onnx/__init__.py) - public API, exporter selection, and user documentation.
-- [`src/torch/onnx/utils.py`](src/torch/onnx/utils.py) - legacy TorchScript exporter helpers.
-- [`src/torch/onnx/verification.py`](src/torch/onnx/verification.py) - exported-model verification entrypoints.
-- [`src/torch/onnx/symbolic_helper.py`](src/torch/onnx/symbolic_helper.py) - shared symbolic translation helpers.
-- [`src/torch/onnx/symbolic_opset*.py`](src/torch/onnx) - opset-specific symbolic lowerings.
+
+| File | Purpose |
+|---|---|
+| `src/torch/onnx/__init__.py` | public API, exporter selection, and user documentation |
+| `src/torch/onnx/utils.py` | legacy TorchScript exporter helpers |
+| `src/torch/onnx/verification.py` | exported-model verification entrypoints |
+| `src/torch/onnx/symbolic_helper.py` | shared symbolic translation helpers |
+| `src/torch/onnx/symbolic_opset*.py` | opset-specific symbolic lowerings |
 
 ## Public Interface
 
@@ -26,11 +29,17 @@ The namespace exposes `export()`, `ONNXProgram`, `OnnxExporterError`, `InputObse
 
 ## Dependencies
 
-The module depends on the compiled ONNX contract in [`src/torch/_C/_onnx.pyi`](src/torch/_C/_onnx.pyi) for enums such as `TrainingMode` and `OperatorExportTypes`. Its preferred graph source is [`src/torch/export/__init__.py`](src/torch/export/__init__.py), while its legacy graph source stays in [`src/torch/jit`](src/torch/jit). The symbolic translation layer also depends on internal exporter code under [`src/torch/onnx/_internal`](src/torch/onnx/_internal).
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/_C](torch/_C/ADR.md) | depends-on | `_onnx.pyi` enums (`TrainingMode`, `OperatorExportTypes`) |
+| [torch/export](torch/export/ADR.md) | depends-on | preferred graph source |
+| [torch/jit](torch/jit/ADR.md) | depends-on | legacy trace graph source |
+| `torch/onnx/_internal` | contains | symbolic translation internals |
 
 ## Runtime Behaviour
 
-When `dynamo=True`, `src/torch/onnx/__init__.py` documents a three-step acquisition strategy: reuse an existing `ExportedProgram`, try `torch.export.export(..., strict=False)`, then retry with `strict=True`. The same file also keeps legacy options like `dynamic_axes` and TorchScript-specific enums alive, so the runtime can serve older export call sites while pushing new users toward dynamic-shape export and `ONNXProgram`-based serialization. `src/torch/onnx/verification.py` exposes `verify_onnx_program()` as a separate path instead of baking verification into the core graph object.
+When `dynamo=True`, `src/torch/onnx/__init__.py` documents a three-step acquisition strategy: reuse an existing `ExportedProgram`, try `torch.export.export` with `strict=False`, then retry with `strict=True`. The same file also keeps legacy options like `dynamic_axes` and TorchScript-specific enums alive, so the runtime can serve older export call sites while pushing new users toward dynamic-shape export and `ONNXProgram`-based serialization. `src/torch/onnx/verification.py` exposes `verify_onnx_program()` as a separate path instead of baking verification into the core graph object.
 
 ## Performance Profile
 

@@ -1,12 +1,12 @@
-# ADR: torch/_refs Python reference implementations
+# `torch/_refs`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/_refs`
-- Decision: Keep Python reference implementations of PyTorch operators in `_refs` so compiler and decomposition flows can depend on readable, semantics-first definitions.
-- Primary entrypoints: reference unary/binary/reduction ops, linalg refs, special refs, FFT refs
-- Evidence: `src/torch/_refs/__init__.py`, `src/torch/_refs/_conversions.py`, `src/torch/_refs/fft.py`, `src/torch/_refs/nn/__init__.py`
-- Caveats: These implementations optimize for correctness and transformability, not for matching native kernel performance.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torch/_refs/__init__.py`](src/torch/_refs/__init__.py) - core reference operator definitions.
-- [`src/torch/_refs/_conversions.py`](src/torch/_refs/_conversions.py) - conversion-oriented helpers.
-- [`src/torch/_refs/fft.py`](src/torch/_refs/fft.py) - FFT reference implementations.
-- [`src/torch/_refs/nn/__init__.py`](src/torch/_refs/nn/__init__.py) - neural-network-facing reference helpers.
-- [`src/torch/_refs/linalg/__init__.py`](src/torch/_refs/linalg/__init__.py) - linear algebra references.
+
+| File | Purpose |
+|---|---|
+| `src/torch/_refs/__init__.py` | core reference operator definitions |
+| `src/torch/_refs/_conversions.py` | conversion-oriented helpers |
+| `src/torch/_refs/fft.py` | FFT reference implementations |
+| `src/torch/_refs/nn/__init__.py` | neural-network-facing reference helpers |
+| `src/torch/_refs/linalg/__init__.py` | linear algebra references |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The directory exports reference forms of many familiar operators, including `add
 
 ## Dependencies
 
-`_refs` depends directly on [`src/torch/_prims/__init__.py`](src/torch/_prims/__init__.py) for its primitive operator building blocks. It also uses dtype and wrapper logic from [`src/torch/_prims_common`](src/torch/_prims_common), and its definitions are consumed by decomposition and compiler code in [`src/torch/_decomp`](src/torch/_decomp) and [`src/torch/export`](src/torch/export). Testing-oriented dtype knowledge also enters through imports from `torch.testing._internal.common_dtype` in `src/torch/_refs/__init__.py`.
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/_prims](torch/_prims/ADR.md) | depends-on | primitive operator building blocks |
+| `torch/_prims_common` | depends-on | dtype and wrapper logic |
+| [torch/_decomp](torch/_decomp/ADR.md) | used-by | decomposition consumer |
+| [torch/export](torch/export/ADR.md) | used-by | export consumer |
 
 ## Runtime Behaviour
 

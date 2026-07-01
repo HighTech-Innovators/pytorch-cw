@@ -1,12 +1,12 @@
-# ADR: torch/_decomp decomposition registry
+# `torch/_decomp`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/_decomp`
-- Decision: Centralize operator decompositions in a registry that can serve export, compiler, autograd-adjacent, and meta execution flows.
-- Primary entrypoints: `register_decomposition`, `get_decompositions`, post-autograd table, pre-autograd table, meta table
-- Evidence: `src/torch/_decomp/__init__.py`, `src/torch/_decomp/decompositions.py`, `src/torch/_decomp/decompositions_for_jvp.py`, `src/torch/_decomp/decompositions_for_rng.py`
-- Caveats: Decomposition registration deliberately filters out overloads that do not have dispatcher kernels.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,10 +14,13 @@
 
 ## Key Files
 
-- [`src/torch/_decomp/__init__.py`](src/torch/_decomp/__init__.py) - registry tables and registration decorators.
-- [`src/torch/_decomp/decompositions.py`](src/torch/_decomp/decompositions.py) - main ATen decomposition definitions.
-- [`src/torch/_decomp/decompositions_for_jvp.py`](src/torch/_decomp/decompositions_for_jvp.py) - JVP-oriented rules.
-- [`src/torch/_decomp/decompositions_for_rng.py`](src/torch/_decomp/decompositions_for_rng.py) - RNG-oriented rules.
+
+| File | Purpose |
+|---|---|
+| `src/torch/_decomp/__init__.py` | registry tables and registration decorators |
+| `src/torch/_decomp/decompositions.py` | main ATen decomposition definitions |
+| `src/torch/_decomp/decompositions_for_jvp.py` | JVP-oriented rules |
+| `src/torch/_decomp/decompositions_for_rng.py` | RNG-oriented rules |
 
 ## Public Interface
 
@@ -25,7 +28,13 @@ The directory exposes `register_decomposition`, `get_decompositions`, `decomposi
 
 ## Dependencies
 
-The registry depends on dispatcher and operator metadata from [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in) and `torch._ops`. The concrete decomposition bodies rely on [`src/torch/_prims/__init__.py`](src/torch/_prims/__init__.py), [`src/torch/_refs/__init__.py`](src/torch/_refs/__init__.py), and [`src/torch/_prims_common`](src/torch/_prims_common). Export-specific consumers also connect back from [`src/torch/export/exported_program.py`](src/torch/export/exported_program.py).
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/_C](torch/_C/ADR.md) | depends-on | dispatcher/operator metadata and `torch._ops` |
+| [torch/_prims](torch/_prims/ADR.md) | depends-on | primitive building blocks for decomposition bodies |
+| [torch/_refs](torch/_refs/ADR.md) | depends-on | reference implementations |
+| [torch/export](torch/export/ADR.md) | used-by | export decomposition consumer |
 
 ## Runtime Behaviour
 

@@ -1,12 +1,12 @@
-# ADR: torch/_C compiled extension contract
+# `torch/_C`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/_C`
-- Decision: Use `torch/_C` as the typed Python contract for the compiled extension, partitioned into focused submodules such as `_onnx`, `_functorch`, and `_profiler`.
-- Primary entrypoints: `device`, `Stream`, `Event`, dtype/layout classes, `_onnx`, `_functorch`, `_profiler`, `_distributed_c10d`
-- Evidence: `src/torch/_C/__init__.pyi.in`, `src/torch/_C/_onnx.pyi`, `src/torch/_C/_functorch.pyi`, `src/torch/_C/_profiler.pyi`
-- Caveats: The directory mostly contains stubs and build metadata, so the ADR documents the contract surface rather than re-describing the full C++ implementation.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in) - primary type stub and submodule aggregator.
-- [`src/torch/_C/_onnx.pyi`](src/torch/_C/_onnx.pyi) - ONNX enums and producer metadata.
-- [`src/torch/_C/_functorch.pyi`](src/torch/_C/_functorch.pyi) - dynamic-layer and transform hooks.
-- [`src/torch/_C/_profiler.pyi`](src/torch/_C/_profiler.pyi) - profiler-facing extension surface.
-- [`src/torch/_C/build.bzl`](src/torch/_C/build.bzl) - build metadata for the extension package.
+
+| File | Purpose |
+|---|---|
+| `src/torch/_C/__init__.pyi.in` | primary type stub and submodule aggregator |
+| `src/torch/_C/_onnx.pyi` | ONNX enums and producer metadata |
+| `src/torch/_C/_functorch.pyi` | dynamic-layer and transform hooks |
+| `src/torch/_C/_profiler.pyi` | profiler-facing extension surface |
+| `src/torch/_C/build.bzl` | build metadata for the extension package |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The core stub exposes the canonical Python types for devices, streams, events, d
 
 ## Dependencies
 
-The stub explicitly points to compiled definitions under [`src/torch/csrc/Module.cpp`](src/torch/csrc/Module.cpp), [`src/torch/csrc/Device.cpp`](src/torch/csrc/Device.cpp), [`src/torch/csrc/Stream.cpp`](src/torch/csrc/Stream.cpp), and other `torch/csrc` sources. Higher-level Python packages such as [`src/torch/cuda`](src/torch/cuda), [`src/torch/jit`](src/torch/jit), [`src/torch/onnx`](src/torch/onnx), and [`src/functorch`](src/functorch) all depend on this contract surface. The directory also reflects codegen output conventions described in [`src/tools/setup_helpers/generate_code.py`](src/tools/setup_helpers/generate_code.py) and [`src/torchgen`](src/torchgen).
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/csrc](torch/csrc/ADR.md) | depends-on | compiled definitions (`Module.cpp`, `Device.cpp`, `Stream.cpp`) |
+| [torch/cuda](torch/cuda/ADR.md) | used-by | Python package consuming the extension contract |
+| [torch/jit](torch/jit/ADR.md) | used-by | Python package consuming compiled JIT types |
+| [torchgen](torchgen/ADR.md) | depends-on | codegen output conventions for the stub |
 
 ## Runtime Behaviour
 

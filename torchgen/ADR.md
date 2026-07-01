@@ -1,12 +1,12 @@
-# ADR: torchgen operator code generation
+# `torchgen`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torchgen`
-- Decision: Keep operator binding, registration, and auxiliary boilerplate generation centralized in `torchgen`, driven by typed models parsed from YAML.
-- Primary entrypoints: `parse_native_yaml`, `NativeFunction`, `BackendIndex`, `gen_backend_stubs`, destination emitters
-- Evidence: `src/torchgen/gen.py`, `src/torchgen/model.py`, `src/torchgen/gen_backend_stubs.py`, `src/torchgen/dest/register_dispatch_key.py`
-- Caveats: This directory runs at build/codegen time, so its performance impact shows up mostly as build latency rather than runtime latency.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torchgen/gen.py`](src/torchgen/gen.py) - main generator entrypoint and YAML parsing pipeline.
-- [`src/torchgen/model.py`](src/torchgen/model.py) - typed schema and dispatch data model.
-- [`src/torchgen/gen_backend_stubs.py`](src/torchgen/gen_backend_stubs.py) - backend stub generation.
-- [`src/torchgen/dest/register_dispatch_key.py`](src/torchgen/dest/register_dispatch_key.py) - per-dispatch-key emission logic.
-- [`src/torchgen/api/autograd.py`](src/torchgen/api/autograd.py) - autograd-facing codegen model utilities.
+
+| File | Purpose |
+|---|---|
+| `src/torchgen/gen.py` | main generator entrypoint and YAML parsing pipeline |
+| `src/torchgen/model.py` | typed schema and dispatch data model |
+| `src/torchgen/gen_backend_stubs.py` | backend stub generation |
+| `src/torchgen/dest/register_dispatch_key.py` | per-dispatch-key emission logic |
+| `src/torchgen/api/autograd.py` | autograd-facing codegen model utilities |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The directory is an internal tool rather than an end-user package, but it expose
 
 ## Dependencies
 
-`torchgen` consumes operator declarations from [`src/aten/src/ATen/native/native_functions.yaml`](src/aten/src/ATen/native/native_functions.yaml) and tags from [`src/aten/src/ATen/native/tags.yaml`](src/aten/src/ATen/native/tags.yaml). It feeds generated code into runtime-facing directories such as [`src/torch/csrc`](src/torch/csrc) and [`src/aten/src/ATen`](src/aten/src/ATen). Build helpers under [`src/tools/autograd`](src/tools/autograd) and [`src/tools/setup_helpers`](src/tools/setup_helpers) also call into this directory.
+
+| Component | Direction | Nature |
+|---|---|---|
+| [aten/src/ATen/native](aten/src/ATen/native/ADR.md) | depends-on | `native_functions.yaml` and `tags.yaml` |
+| [torch/csrc](torch/csrc/ADR.md) | feeds | generated Python/C++ bindings |
+| [aten/src/ATen](aten/src/ATen/ADR.md) | feeds | generated ATen operator code |
+| [tools/autograd](tools/autograd/ADR.md) | used-by | autograd codegen caller |
 
 ## Runtime Behaviour
 

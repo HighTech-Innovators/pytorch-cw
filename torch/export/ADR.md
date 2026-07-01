@@ -1,12 +1,12 @@
-# ADR: torch/export AOT graph contract
+# `torch/export`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/export`
-- Decision: Use `torch.export` as the Ahead-of-Time graph capture API that emits normalized functional ATen graphs plus explicit shape constraints.
-- Primary entrypoints: `export`, `draft_export`, `ExportedProgram`, `Dim`, `dims`, `save`, `load`, `unflatten`
-- Evidence: `src/torch/export/__init__.py`, `src/torch/export/dynamic_shapes.py`, `src/torch/export/exported_program.py`, `src/torch/export/graph_signature.py`
-- Caveats: Export rejects `torch.jit.ScriptModule` directly, so legacy scripted graphs must go through separate conversion paths.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torch/export/__init__.py`](src/torch/export/__init__.py) - public API and soundness contract.
-- [`src/torch/export/dynamic_shapes.py`](src/torch/export/dynamic_shapes.py) - `Dim`, bounds, and shape-spec utilities.
-- [`src/torch/export/exported_program.py`](src/torch/export/exported_program.py) - `ExportedProgram`, module-call metadata, and decomposition overrides.
-- [`src/torch/export/graph_signature.py`](src/torch/export/graph_signature.py) - graph input/output metadata types.
-- [`src/torch/export/_trace.py`](src/torch/export/_trace.py) - capture implementation behind the public API.
+
+| File | Purpose |
+|---|---|
+| `src/torch/export/__init__.py` | public API and soundness contract |
+| `src/torch/export/dynamic_shapes.py` | `Dim`, bounds, and shape-spec utilities |
+| `src/torch/export/exported_program.py` | `ExportedProgram`, module-call metadata, and decomposition overrides |
+| `src/torch/export/graph_signature.py` | graph input/output metadata types |
+| `src/torch/export/_trace.py` | capture implementation behind the public API |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The namespace exports `export`, `draft_export`, `ExportedProgram`, `Dim`, `dims`
 
 ## Dependencies
 
-`torch.export` depends on the compile-stack building blocks in [`src/torch/_dynamo/eval_frame.py`](src/torch/_dynamo/eval_frame.py), [`src/torch/fx/graph.py`](src/torch/fx/graph.py), and [`src/torch/_guards.py`](src/torch/_guards.py). It also consumes decomposition infrastructure from [`src/torch/_decomp/__init__.py`](src/torch/_decomp/__init__.py) and custom decomposition tables from [`src/torch/export/decomp_utils.py`](src/torch/export/decomp_utils.py). At the runtime boundary it relies on dispatch keys and operator metadata surfaced through [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in).
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/_dynamo](torch/_dynamo/ADR.md) | depends-on | graph capture through `eval_frame.py` |
+| [torch/fx](torch/fx/ADR.md) | depends-on | FX `Graph` produced by capture |
+| [torch/_decomp](torch/_decomp/ADR.md) | depends-on | decomposition tables |
+| [torch/_C](torch/_C/ADR.md) | depends-on | dispatch keys and operator metadata |
 
 ## Runtime Behaviour
 

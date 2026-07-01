@@ -1,12 +1,12 @@
-# ADR: tools/autograd gradient code generation
+# `tools/autograd`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/tools/autograd`
-- Decision: Generate autograd bindings and backward nodes from declarative derivative metadata instead of hand-maintaining the full operator gradient surface.
-- Primary entrypoints: `gen_autograd`, `gen_autograd_python`, `load_derivatives`, `derivatives.yaml`
-- Evidence: `src/tools/autograd/README.md`, `src/tools/autograd/gen_autograd.py`, `src/tools/autograd/load_derivatives.py`, `src/tools/autograd/derivatives.yaml`
-- Caveats: Any new file in this directory must be wired into build dependencies, as stated by `src/tools/autograd/README.md`.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/tools/autograd/README.md`](src/tools/autograd/README.md) - build integration rule for the directory.
-- [`src/tools/autograd/gen_autograd.py`](src/tools/autograd/gen_autograd.py) - main orchestration script.
-- [`src/tools/autograd/load_derivatives.py`](src/tools/autograd/load_derivatives.py) - derivative parsing and caching.
-- [`src/tools/autograd/derivatives.yaml`](src/tools/autograd/derivatives.yaml) - declarative gradient formulas.
-- [`src/tools/autograd/gen_autograd_functions.py`](src/tools/autograd/gen_autograd_functions.py) - backward-node emission.
+
+| File | Purpose |
+|---|---|
+| `src/tools/autograd/README.md` | build integration rule for the directory |
+| `src/tools/autograd/gen_autograd.py` | main orchestration script |
+| `src/tools/autograd/load_derivatives.py` | derivative parsing and caching |
+| `src/tools/autograd/derivatives.yaml` | declarative gradient formulas |
+| `src/tools/autograd/gen_autograd_functions.py` | backward-node emission |
 
 ## Public Interface
 
@@ -26,7 +29,12 @@ The public interface here is internal and build-oriented. `gen_autograd.py` expo
 
 ## Dependencies
 
-The directory depends on operator schemas from [`src/aten/src/ATen/native/native_functions.yaml`](src/aten/src/ATen/native/native_functions.yaml) and tags from [`src/aten/src/ATen/native/tags.yaml`](src/aten/src/ATen/native/tags.yaml). It consumes typed parsing and schema helpers from [`src/torchgen/gen.py`](src/torchgen/gen.py), and its generated outputs are consumed by runtime sources such as [`src/torch/csrc/autograd/engine.cpp`](src/torch/csrc/autograd/engine.cpp) and [`src/torch/csrc/autograd/variable.h`](src/torch/csrc/autograd/variable.h).
+
+| Component | Direction | Nature |
+|---|---|---|
+| [aten/src/ATen/native](aten/src/ATen/native/ADR.md) | depends-on | `native_functions.yaml` and `tags.yaml` schemas |
+| [torchgen](torchgen/ADR.md) | depends-on | typed schema parsing helpers |
+| [torch/csrc/autograd](torch/csrc/autograd/ADR.md) | feeds | generated `Variable`/`engine` bindings consumed there |
 
 ## Runtime Behaviour
 

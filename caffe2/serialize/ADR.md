@@ -1,12 +1,12 @@
-# ADR: caffe2/serialize archive format and IO layer
+# `caffe2/serialize`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/caffe2/serialize`
-- Decision: Keep checkpoint and package serialization on a zip-based container with explicit versioning, alignment, and random-access readers.
-- Primary entrypoints: `PyTorchStreamReader`, `PyTorchStreamWriter`, `ChunkRecordIterator`, `ReadAdapterInterface`, `FileAdapter`, `IStreamAdapter`
-- Evidence: `src/caffe2/serialize/inline_container.h`, `src/caffe2/serialize/inline_container.cc`, `src/caffe2/serialize/file_adapter.h`, `src/caffe2/serialize/read_adapter_interface.h`
-- Caveats: The directory is C++ infrastructure, so the ADR documents file-format and IO behavior rather than Python call patterns.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/caffe2/serialize/inline_container.h`](src/caffe2/serialize/inline_container.h) - archive format contract and reader/writer declarations.
-- [`src/caffe2/serialize/inline_container.cc`](src/caffe2/serialize/inline_container.cc) - reader initialization, validation, and offset logic.
-- [`src/caffe2/serialize/file_adapter.h`](src/caffe2/serialize/file_adapter.h) - file-backed read adapter.
-- [`src/caffe2/serialize/read_adapter_interface.h`](src/caffe2/serialize/read_adapter_interface.h) - abstract reader contract.
-- [`src/caffe2/serialize/istream_adapter.h`](src/caffe2/serialize/istream_adapter.h) - stream-backed read adapter.
+
+| File | Purpose |
+|---|---|
+| `src/caffe2/serialize/inline_container.h` | archive format contract and reader/writer declarations |
+| `src/caffe2/serialize/inline_container.cc` | reader initialization, validation, and offset logic |
+| `src/caffe2/serialize/file_adapter.h` | file-backed read adapter |
+| `src/caffe2/serialize/read_adapter_interface.h` | abstract reader contract |
+| `src/caffe2/serialize/istream_adapter.h` | stream-backed read adapter |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The directory exposes C++ reader and writer classes rather than Python functions
 
 ## Dependencies
 
-The implementation depends on [`src/c10/core/Allocator.h`](src/c10/core/Allocator.h) and [`src/c10/core/CPUAllocator.h`](src/c10/core/CPUAllocator.h) for record allocation, on [`src/caffe2/serialize/versions.h`](src/caffe2/serialize/versions.h) for format bounds, and on the miniz integration pulled in from `inline_container.cc`. Higher-level serialization consumers live under [`src/torch/jit`](src/torch/jit), [`src/torch/package`](src/torch/package), and checkpointing code elsewhere in the tree.
+
+| Component | Direction | Nature |
+|---|---|---|
+| [c10/core](c10/core/ADR.md) | depends-on | record allocation via `Allocator.h`/`CPUAllocator.h` |
+| `caffe2/serialize/versions.h` | depends-on | supported file-format version bounds |
+| `miniz` (bundled) | depends-on | zip archive read/write codec |
+| [torch/jit](torch/jit/ADR.md) | used-by | module and package deserialization consumer |
 
 ## Runtime Behaviour
 

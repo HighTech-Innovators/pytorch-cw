@@ -1,12 +1,12 @@
-# ADR: torch/jit TorchScript facade
+# `torch/jit`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/jit`
-- Decision: Preserve `torch.jit` as a Python facade over compiled TorchScript and tracing machinery while signaling that `torch.compile` is the preferred future path.
-- Primary entrypoints: `script`, `trace`, `trace_module`, `save`, `load`, `freeze`, `optimize_for_inference`
-- Evidence: `src/torch/jit/__init__.py`, `src/torch/jit/_script.py`, `src/torch/jit/_trace.py`, `src/torch/jit/_serialization.py`, `src/torch/jit/_freeze.py`
-- Caveats: Some helper paths still mention CUDA timing, but the current repository constraints validate them from source only.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torch/jit/__init__.py`](src/torch/jit/__init__.py) - namespace assembly and public exports.
-- [`src/torch/jit/_script.py`](src/torch/jit/_script.py) - scripting frontend, `ScriptFunction`, and `ScriptModule` integration.
-- [`src/torch/jit/_trace.py`](src/torch/jit/_trace.py) - tracing frontend, input cloning, and graph capture.
-- [`src/torch/jit/_serialization.py`](src/torch/jit/_serialization.py) - save/load wrappers.
-- [`src/torch/jit/_freeze.py`](src/torch/jit/_freeze.py) - module freezing and inference-oriented cleanup.
+
+| File | Purpose |
+|---|---|
+| `src/torch/jit/__init__.py` | namespace assembly and public exports |
+| `src/torch/jit/_script.py` | scripting frontend, `ScriptFunction`, and `ScriptModule` integration |
+| `src/torch/jit/_trace.py` | tracing frontend, input cloning, and graph capture |
+| `src/torch/jit/_serialization.py` | save/load wrappers |
+| `src/torch/jit/_freeze.py` | module freezing and inference-oriented cleanup |
 
 ## Public Interface
 
@@ -26,7 +29,12 @@ The namespace exports `script`, `trace`, `trace_module`, `save`, `load`, `freeze
 
 ## Dependencies
 
-`torch.jit` depends on the compiled JIT types surfaced through [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in) and implemented under [`src/torch/csrc/jit`](src/torch/csrc/jit). The scripting frontend also uses [`src/torch/jit/frontend.py`](src/torch/jit/frontend.py) and recursive module wrapping from [`src/torch/jit/_recursive.py`](src/torch/jit/_recursive.py). The tracing path intersects ONNX export through `ONNXTracedModule` in [`src/torch/jit/_trace.py`](src/torch/jit/_trace.py), which is one reason the JIT stack still matters to adjacent export code.
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/_C](torch/_C/ADR.md) | depends-on | compiled JIT types |
+| [torch/csrc/jit](torch/csrc/jit/ADR.md) | depends-on | C++ TorchScript compiler implementation |
+| [torch/onnx](torch/onnx/ADR.md) | used-by | tracing path used by ONNX export |
 
 ## Runtime Behaviour
 

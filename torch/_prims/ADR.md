@@ -1,12 +1,12 @@
-# ADR: torch/_prims primitive operator basis
+# `torch/_prims`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/_prims`
-- Decision: Maintain a small, explicit primitive operator namespace that other reference and compiler layers can target instead of reasoning over the full ATen surface directly.
-- Primary entrypoints: primitive library registration, elementwise/view/reduction prims, RNG prims, debug prims
-- Evidence: `src/torch/_prims/__init__.py`, `src/torch/_prims/executor.py`, `src/torch/_prims/rng_prims.py`, `src/torch/_prims/debug_prims.py`
-- Caveats: The directory is marked experimental and intentionally exposes prototype operators rather than a stable user API.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,10 +14,13 @@
 
 ## Key Files
 
-- [`src/torch/_prims/__init__.py`](src/torch/_prims/__init__.py) - primitive namespace definition and registration.
-- [`src/torch/_prims/executor.py`](src/torch/_prims/executor.py) - execution helpers for primitive graphs.
-- [`src/torch/_prims/rng_prims.py`](src/torch/_prims/rng_prims.py) - randomness-related primitive registration.
-- [`src/torch/_prims/debug_prims.py`](src/torch/_prims/debug_prims.py) - debug-only primitive registration.
+
+| File | Purpose |
+|---|---|
+| `src/torch/_prims/__init__.py` | primitive namespace definition and registration |
+| `src/torch/_prims/executor.py` | execution helpers for primitive graphs |
+| `src/torch/_prims/rng_prims.py` | randomness-related primitive registration |
+| `src/torch/_prims/debug_prims.py` | debug-only primitive registration |
 
 ## Public Interface
 
@@ -25,7 +28,13 @@ This namespace mostly serves internal users rather than end-user code. The expor
 
 ## Dependencies
 
-`torch._prims` depends heavily on [`src/torch/_prims_common`](src/torch/_prims_common) for dtype, shape, and wrapper utilities. It uses the operator registration system in [`src/torch/library.py`](src/torch/library.py) and dispatch-key concepts surfaced through [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in). It also feeds directly into [`src/torch/_refs/__init__.py`](src/torch/_refs/__init__.py) and [`src/torch/_decomp/__init__.py`](src/torch/_decomp/__init__.py).
+
+| Component | Direction | Nature |
+|---|---|---|
+| `torch/_prims_common` | depends-on | dtype, shape, and wrapper utilities |
+| [torch/_C](torch/_C/ADR.md) | depends-on | dispatch-key concepts and library registration |
+| [torch/_refs](torch/_refs/ADR.md) | feeds | reference implementations built on prims |
+| [torch/_decomp](torch/_decomp/ADR.md) | feeds | decomposition registry |
 
 ## Runtime Behaviour
 

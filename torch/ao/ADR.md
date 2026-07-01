@@ -1,12 +1,12 @@
-# ADR: torch/ao quantization and optimization surface
+# `torch/ao`
 
-- Status: Draft
-- Date: 2026-07-01
-- Scope: `src/torch/ao`
-- Decision: Consolidate quantization-oriented observers, fake-quant modules, and graph-rewrite frontends under `torch.ao`, while supporting eager, FX, and TorchScript workflows.
-- Primary entrypoints: `prepare`, `convert`, `quantize`, `fuse_modules`, `prepare_jit`, `convert_jit`, `fuse_fx`, `prepare_fx`
-- Evidence: `src/torch/ao/quantization/__init__.py`, `src/torch/ao/quantization/quantize_fx.py`, `src/torch/ao/quantization/quantize_jit.py`, `src/torch/ao/quantization/qconfig.py`
-- Caveats: Some JIT conversion flows explicitly move models to CPU because quantized operator coverage is backend-limited.
+- [Role](#role)
+- [Key Files](#key-files)
+- [Public Interface](#public-interface)
+- [Dependencies](#dependencies)
+- [Runtime Behaviour](#runtime-behaviour)
+- [Performance Profile](#performance-profile)
+- [Design Rationale](#design-rationale)
 
 ## Role
 
@@ -14,11 +14,14 @@
 
 ## Key Files
 
-- [`src/torch/ao/quantization/__init__.py`](src/torch/ao/quantization/__init__.py) - public API assembly for quantization.
-- [`src/torch/ao/quantization/quantize_fx.py`](src/torch/ao/quantization/quantize_fx.py) - FX graph-mode tracing, fusion, and prepare/convert flow.
-- [`src/torch/ao/quantization/quantize_jit.py`](src/torch/ao/quantization/quantize_jit.py) - TorchScript quantization passes.
-- [`src/torch/ao/quantization/qconfig.py`](src/torch/ao/quantization/qconfig.py) - observer and fake-quant configuration model.
-- [`src/torch/ao/quantization/fake_quantize.py`](src/torch/ao/quantization/fake_quantize.py) - fake-quant modules for training-time simulation.
+
+| File | Purpose |
+|---|---|
+| `src/torch/ao/quantization/__init__.py` | public API assembly for quantization |
+| `src/torch/ao/quantization/quantize_fx.py` | FX graph-mode tracing, fusion, and prepare/convert flow |
+| `src/torch/ao/quantization/quantize_jit.py` | TorchScript quantization passes |
+| `src/torch/ao/quantization/qconfig.py` | observer and fake-quant configuration model |
+| `src/torch/ao/quantization/fake_quantize.py` | fake-quant modules for training-time simulation |
 
 ## Public Interface
 
@@ -26,7 +29,13 @@ The namespace exposes `QConfig`, `QConfigMapping`, observer classes, fake-quant 
 
 ## Dependencies
 
-FX quantization depends on [`src/torch/fx`](src/torch/fx) graph capture and graph modules, which `src/torch/ao/quantization/quantize_fx.py` uses directly. TorchScript quantization depends on [`src/torch/jit`](src/torch/jit) and compiled JIT passes surfaced through [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in). The namespace also leans on quantized module definitions under [`src/torch/ao/nn`](src/torch/ao/nn) and backend-specific configurations under [`src/torch/ao/quantization/backend_config`](src/torch/ao/quantization/backend_config).
+
+| Component | Direction | Nature |
+|---|---|---|
+| [torch/fx](torch/fx/ADR.md) | depends-on | FX graph capture used by `quantize_fx.py` |
+| [torch/jit](torch/jit/ADR.md) | depends-on | TorchScript quantization passes |
+| [torch/_C](torch/_C/ADR.md) | depends-on | compiled JIT quantization passes |
+| `torch/ao/nn` / `torch/ao/quantization/backend_config` | contains | quantized modules and backend configs |
 
 ## Runtime Behaviour
 
