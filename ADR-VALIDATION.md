@@ -1,16 +1,16 @@
 # ADR Validation Report
 
-Run: 1
+Run: 2
 Date: 2026-07-01
 
 ## Results
 
 | Check | Status | Notes |
 |---|---|---|
-| 1. Scope map current | FAIL | `src/adr-scope.md` does not exist |
-| 2. Files match COVERED | FAIL | No `adr-scope.md`; 14 ADR.md files found with no scope to validate against |
-| 3. Exclusion justifications | FAIL | No `adr-scope.md`; cannot verify any exclusion reasons |
-| 4. ADR content non-stub | FAIL | All 14 ADR.md files fail title format, section index, Key Files format, and Dependencies format (see detail below) |
+| 1. Scope map current | FAIL | `src/adr-scope.md` does not exist; 17 depth-1 directories unclassified |
+| 2. Files match COVERED | FAIL | No `adr-scope.md`; 14 ADR.md files present, 0 COVERED entries — count mismatch |
+| 3. Exclusion justifications | FAIL | Cannot evaluate; `adr-scope.md` does not exist |
+| 4. ADR content non-stub | FAIL | 16 broken dependency links across 7 ADR files (all other sub-checks PASS) |
 | 5. Book cross-reference | FAIL | 21 book-named architectural units have no ADR and no COVERED ancestor in scope map |
 
 ## Overall: FAIL
@@ -21,10 +21,11 @@ Date: 2026-07-01
 
 A helper script `src/adr/_tools/check_scope.py` has been written for reuse once `adr-scope.md` is created. Run it from the outer repository root: `python3 src/adr/_tools/check_scope.py`.
 
-Depth-1 directories in `src/` that must appear explicitly in `adr-scope.md` (no implicit rule applies at depth 1):
+`find ./src -type d -not -path '*/.*' | sort` produced 1249 directories. The following 17 depth-1 directories must appear explicitly in `adr-scope.md` (no implicit rule applies at depth 1):
 
 | Directory | Required explicit entry |
 |---|---|
+| adr | Yes |
 | android | Yes |
 | aten | Yes |
 | benchmarks | Yes |
@@ -44,7 +45,9 @@ Depth-1 directories in `src/` that must appear explicitly in `adr-scope.md` (no 
 
 ## Check 2 Detail
 
-No `adr-scope.md` exists, so COVERED entries cannot be defined or compared against actual ADR.md files. Once `adr-scope.md` is created, the following 14 ADR.md files are present:
+Double-nesting check: `find ./src/src -name 'ADR.md'` returned no results. No ADRs at wrong nesting depth.
+
+No `adr-scope.md` exists, so COVERED entries cannot be defined or compared against actual ADR.md files. 14 ADR.md files are present (0 COVERED entries in scope map → count mismatch):
 
 ```
 src/caffe2/serialize/ADR.md
@@ -63,64 +66,85 @@ src/torch/onnx/ADR.md
 src/torchgen/ADR.md
 ```
 
-No double-nesting issues: `find ./src/src -name 'ADR.md'` returned no results.
+All 14 files are at the correct `./src/<dir>/ADR.md` depth (no `./src/<dir>/sub/ADR.md` misplacement).
 
 ## Check 3 Detail
 
-No `adr-scope.md` exists, so there are no EXCLUDED entries to validate.
+`adr-scope.md` does not exist, so no directories are classified as EXCLUDED. Cannot evaluate exclusion justifications. This check is blocked by Check 1.
 
 ## Check 4 Detail
 
-All 14 ADR.md files fail the following content checks:
+This pass significantly improved ADR content. Sub-checks 4a–4d, 4f–4g now PASS for all 14 files. Sub-check 4e (broken dependency links) FAILs.
 
-### 4a — Title heading format (ALL 14 FAIL)
+### 4a — Title heading format (ALL 14 PASS)
 
-Every ADR must begin with `# \`<src-relative-dir>\``. All 14 files instead use a descriptive prose title (`# ADR: <description>`).
+All 14 ADRs now begin with the correct `# \`<src-relative-dir>\`` format. Verified first lines:
 
-| ADR directory | Actual first line |
+| ADR file | First line |
 |---|---|
-| `caffe2/serialize` | `# ADR: caffe2/serialize archive format and IO layer` |
-| `functorch` | `# ADR: functorch transform compatibility layer` |
-| `tools/autograd` | `# ADR: tools/autograd gradient code generation` |
-| `tools/setup_helpers` | `# ADR: tools/setup_helpers build orchestration helpers` |
-| `torch/ao` | `# ADR: torch/ao quantization and optimization surface` |
-| `torch/_C` | `# ADR: torch/_C compiled extension contract` |
-| `torch/cuda` | `# ADR: torch/cuda runtime surface` |
-| `torch/_decomp` | `# ADR: torch/_decomp decomposition registry` |
-| `torch/export` | `# ADR: torch/export AOT graph contract` |
-| `torchgen` | `# ADR: torchgen operator code generation` |
-| `torch/jit` | `# ADR: torch/jit TorchScript facade` |
-| `torch/onnx` | `# ADR: torch/onnx export bridge` |
-| `torch/_prims` | `# ADR: torch/_prims primitive operator basis` |
-| `torch/_refs` | `# ADR: torch/_refs Python reference implementations` |
+| `src/caffe2/serialize/ADR.md` | `` # `caffe2/serialize` `` |
+| `src/functorch/ADR.md` | `` # `functorch` `` |
+| `src/tools/autograd/ADR.md` | `` # `tools/autograd` `` |
+| `src/tools/setup_helpers/ADR.md` | `` # `tools/setup_helpers` `` |
+| `src/torch/ao/ADR.md` | `` # `torch/ao` `` |
+| `src/torch/_C/ADR.md` | `` # `torch/_C` `` |
+| `src/torch/cuda/ADR.md` | `` # `torch/cuda` `` |
+| `src/torch/_decomp/ADR.md` | `` # `torch/_decomp` `` |
+| `src/torch/export/ADR.md` | `` # `torch/export` `` |
+| `src/torchgen/ADR.md` | `` # `torchgen` `` |
+| `src/torch/jit/ADR.md` | `` # `torch/jit` `` |
+| `src/torch/onnx/ADR.md` | `` # `torch/onnx` `` |
+| `src/torch/_prims/ADR.md` | `` # `torch/_prims` `` |
+| `src/torch/_refs/ADR.md` | `` # `torch/_refs` `` |
 
-### 4b — Section index bullet list missing (ALL 14 FAIL)
+### 4b — Section index bullet list (ALL 14 PASS)
 
-Immediately after the title heading, each ADR must have a bare bullet list (no heading) linking to all 7 content sections: Role, Key Files, Public Interface, Dependencies, Runtime Behaviour, Performance Profile, Design Rationale. All 14 ADRs have a front-matter metadata block (Status, Date, Scope, Decision, etc.) instead of a section-link index. None have the required 7-item bullet list.
+All 14 ADRs now have the required 7-item bare bullet list immediately after the title heading (Role, Key Files, Public Interface, Dependencies, Runtime Behaviour, Performance Profile, Design Rationale). PASS.
 
-### 4c — Key Files section is bullet-list form (ALL 14 FAIL)
+### 4c — Key Files section format (ALL 14 PASS)
 
-The `## Key Files` section must be a markdown table. All 14 ADRs render Key Files as a bullet list (lines beginning with `-`). Examples:
+All 14 ADRs now have `## Key Files` as a markdown table (`| File | Purpose |` header + separator + at least 1 real file-path data row). `## Key Files` appears exactly once in each file. PASS.
 
-- `src/caffe2/serialize/ADR.md`: `- [\`src/caffe2/serialize/inline_container.h\`](...) - archive format contract...`
-- `src/torch/ao/ADR.md`: `- [\`src/torch/ao/quantization/__init__.py\`](...) - public API assembly...`
-- (pattern identical across all 14 files)
+### 4d — Dependencies section format (ALL 14 PASS)
 
-### 4d — Dependencies section is prose, not a table (ALL 14 FAIL)
+All 14 ADRs now have `## Dependencies` as a markdown table (`| Component | Direction | Nature |` header) with at least 1 data row. PASS.
 
-The `## Dependencies` section must be a table with at least 1 row, or an explicit statement that there are no notable dependencies. All 14 ADRs have the Dependencies section as a prose paragraph of sentences. No dependency table or "no notable dependencies" statement is present in any ADR.
+### 4e — Relative path violations (PASS)
 
-### 4e — No ADR cross-links found (INFORMATIONAL)
+`grep -rn '\.\.' ./src --include='ADR.md'` returned no matches. No `../` relative paths in any ADR dependency link. PASS.
 
-`grep -rn '](.*ADR\.md)' ./src --include='ADR.md'` returned no matches. No dependency links between ADR files are present in any ADR, meaning the Dependencies sections reference directories or file paths but never link to another `ADR.md`. This is not a FAIL under the explicit check rules, but it is inconsistent with the intent that ADRs form a cross-referenced architecture graph.
+### 4f — Broken dependency link targets (FAIL — 16 broken links in 7 files)
 
-### 4f — Runtime Behaviour and Performance Profile (PASS for all 14)
+`grep -rn '](.*ADR\.md)' ./src --include='ADR.md'` found 46 dependency links across 14 ADR files. 16 link targets do not exist at `./src/<link-path>`:
 
-Every ADR's `## Runtime Behaviour` section contains ≥ 2 sentences grounded in function names, file paths, and source-verified behavior. Every `## Performance Profile` section also contains ≥ 2 sentences addressing allocation, synchronization, data movement, or explicit statements about overhead tradeoffs. No FAIL on these sub-checks.
+| Source file | Line | Link target | Status |
+|---|---|---|---|
+| `src/caffe2/serialize/ADR.md` | 35 | `c10/core/ADR.md` | BROKEN — file not yet written |
+| `src/torch/cuda/ADR.md` | 36 | `c10/cuda/ADR.md` | BROKEN — file not yet written |
+| `src/torch/cuda/ADR.md` | 37 | `c10/core/ADR.md` | BROKEN — file not yet written |
+| `src/torch/cuda/ADR.md` | 38 | `torch/csrc/profiler/ADR.md` | BROKEN — file not yet written |
+| `src/torch/_C/ADR.md` | 35 | `torch/csrc/ADR.md` | BROKEN — file not yet written |
+| `src/torch/export/ADR.md` | 35 | `torch/_dynamo/ADR.md` | BROKEN — file not yet written |
+| `src/torch/export/ADR.md` | 36 | `torch/fx/ADR.md` | BROKEN — file not yet written |
+| `src/torch/jit/ADR.md` | 36 | `torch/csrc/jit/ADR.md` | BROKEN — file not yet written |
+| `src/torch/ao/ADR.md` | 35 | `torch/fx/ADR.md` | BROKEN — file not yet written |
+| `src/torchgen/ADR.md` | 35 | `aten/src/ATen/native/ADR.md` | BROKEN — file not yet written |
+| `src/torchgen/ADR.md` | 36 | `torch/csrc/ADR.md` | BROKEN — file not yet written |
+| `src/torchgen/ADR.md` | 37 | `aten/src/ATen/ADR.md` | BROKEN — file not yet written |
+| `src/functorch/ADR.md` | 34 | `torch/_functorch/ADR.md` | BROKEN — file not yet written |
+| `src/functorch/ADR.md` | 36 | `torch/fx/ADR.md` | BROKEN — file not yet written |
+| `src/tools/autograd/ADR.md` | 35 | `aten/src/ATen/native/ADR.md` | BROKEN — file not yet written |
+| `src/tools/autograd/ADR.md` | 37 | `torch/csrc/autograd/ADR.md` | BROKEN — file not yet written |
 
-### 4g — Source references (PASS for all 14)
+All 16 broken targets correspond to ADR files that must be written for Check 5 (the missing core subsystems). Once those ADRs are written, all 16 links will resolve.
 
-Every ADR references at least one actual file, function, or type from the repository (e.g., `src/caffe2/serialize/inline_container.h`, `PyTorchStreamReader`, `src/torch/ao/quantization/__init__.py`). No FAIL on this sub-check.
+### 4g — Runtime Behaviour and Performance Profile (ALL 14 PASS)
+
+Every ADR's `## Runtime Behaviour` and `## Performance Profile` sections contain ≥ 2 sentences grounded in function names, file paths, and source-verified behavior. PASS for all 14.
+
+### 4h — Source references (ALL 14 PASS)
+
+Every ADR references at least one actual file, function, or type from the repository. PASS for all 14.
 
 ## Check 5 Detail
 
@@ -150,9 +174,9 @@ The following subsystems are named as distinct architectural units in the book (
 | c10d / RPC backends | `torch/csrc/distributed` | backlog | NO ADR |
 | C++ Dynamo frame-eval hook | `torch/csrc/dynamo` | Ch.09 | NO ADR |
 
-Subsystems with ADR files present (COVERED once `adr-scope.md` is written):
+Subsystems with ADR files present (will be COVERED once `adr-scope.md` is written):
 
-| Subsystem (from book) | Directory | ADR |
+| Subsystem (from book) | Directory | ADR file |
 |---|---|---|
 | Operator code generator | `torchgen` | `src/torchgen/ADR.md` |
 | torch.export | `torch/export` | `src/torch/export/ADR.md` |
@@ -172,48 +196,37 @@ Subsystems with ADR files present (COVERED once `adr-scope.md` is written):
 ## Required Actions
 
 **Check 1 — Create `src/adr-scope.md`:**
-- Create `./src/adr-scope.md` classifying every non-hidden depth-1 directory and every architectural subdirectory. All 16 depth-1 directories listed in Check 1 Detail must appear explicitly. Mark build/config/test/vendor directories as EXCLUDED with an acceptable reason; mark architectural directories as COVERED with the corresponding ADR path.
+- Create `./src/adr-scope.md` classifying every non-hidden depth-1 directory and every architectural subdirectory. All 17 depth-1 directories listed in Check 1 Detail must appear explicitly (including `adr`, which holds validation tooling). Mark build/config/test/vendor directories as EXCLUDED with an acceptable reason; mark architectural directories as COVERED with the corresponding ADR path.
 
 **Check 2 — ADR placement (after scope map exists):**
-- Once `adr-scope.md` is created with COVERED entries for the 14 existing ADR directories, Check 2 will pass for those entries provided the file paths are correct (all confirmed at `./src/<dir>/ADR.md`). No current ADRs are at the wrong nesting depth.
+- Once `adr-scope.md` is created with COVERED entries for the 14 existing ADR directories, Check 2 will pass for those entries. All 14 current ADRs are confirmed at correct `./src/<dir>/ADR.md` depth.
 
 **Check 3 — Exclusion justifications (after scope map exists):**
 - Ensure every EXCLUDED entry in `adr-scope.md` uses one of the seven acceptable reasons: `Auto-generated code`, `Build/config only`, `Vendored/third-party`, `Test data only`, `Test suite`, `Empty or stub`, `Leaf with no architectural boundary`.
 - Verify that no EXCLUDED directory is named as a distinct architectural unit in any chapter file under `./book/`.
 
-**Check 4 — Fix all 14 ADR.md files:**
-- Fix title heading in all 14 ADRs: replace `# ADR: <description>` with `# \`<dir>\`` (backtick-delimited src-relative path). Examples:
-  - `src/caffe2/serialize/ADR.md` line 1: replace with `# \`caffe2/serialize\``
-  - `src/functorch/ADR.md` line 1: replace with `# \`functorch\``
-  - `src/tools/autograd/ADR.md` line 1: replace with `# \`tools/autograd\``
-  - `src/tools/setup_helpers/ADR.md` line 1: replace with `# \`tools/setup_helpers\``
-  - `src/torch/ao/ADR.md` line 1: replace with `# \`torch/ao\``
-  - `src/torch/_C/ADR.md` line 1: replace with `# \`torch/_C\``
-  - `src/torch/cuda/ADR.md` line 1: replace with `# \`torch/cuda\``
-  - `src/torch/_decomp/ADR.md` line 1: replace with `# \`torch/_decomp\``
-  - `src/torch/export/ADR.md` line 1: replace with `# \`torch/export\``
-  - `src/torchgen/ADR.md` line 1: replace with `# \`torchgen\``
-  - `src/torch/jit/ADR.md` line 1: replace with `# \`torch/jit\``
-  - `src/torch/onnx/ADR.md` line 1: replace with `# \`torch/onnx\``
-  - `src/torch/_prims/ADR.md` line 1: replace with `# \`torch/_prims\``
-  - `src/torch/_refs/ADR.md` line 1: replace with `# \`torch/_refs\``
-- Add section index bullet list immediately after the title heading in all 14 ADRs. The list must contain exactly these 7 links (no heading before the list):
-  ```
-  - [Role](#role)
-  - [Key Files](#key-files)
-  - [Public Interface](#public-interface)
-  - [Dependencies](#dependencies)
-  - [Runtime Behaviour](#runtime-behaviour)
-  - [Performance Profile](#performance-profile)
-  - [Design Rationale](#design-rationale)
-  ```
-- Convert `## Key Files` sections from bullet lists to markdown tables in all 14 ADRs. The table must have at minimum a header row (`| File | Purpose |`), a separator, and at least 1 data row with a real file path.
-- Convert `## Dependencies` sections from prose paragraphs to markdown tables in all 14 ADRs. Table format: `| Dependency | Relationship |`. If there are no notable dependencies, replace the prose with the explicit statement: `No notable dependencies.`
+**Check 4 — Fix 16 broken dependency links (once missing ADRs are written):**
+- Broken link in `src/caffe2/serialize/ADR.md` line 35: `c10/core/ADR.md` will resolve once `src/c10/core/ADR.md` is written
+- Broken link in `src/torch/cuda/ADR.md` line 36: `c10/cuda/ADR.md` will resolve once `src/c10/cuda/ADR.md` is written
+- Broken link in `src/torch/cuda/ADR.md` line 37: `c10/core/ADR.md` will resolve once `src/c10/core/ADR.md` is written
+- Broken link in `src/torch/cuda/ADR.md` line 38: `torch/csrc/profiler/ADR.md` will resolve once `src/torch/csrc/profiler/ADR.md` is written
+- Broken link in `src/torch/_C/ADR.md` line 35: `torch/csrc/ADR.md` will resolve once `src/torch/csrc/ADR.md` is written
+- Broken link in `src/torch/export/ADR.md` line 35: `torch/_dynamo/ADR.md` will resolve once `src/torch/_dynamo/ADR.md` is written
+- Broken link in `src/torch/export/ADR.md` line 36: `torch/fx/ADR.md` will resolve once `src/torch/fx/ADR.md` is written
+- Broken link in `src/torch/jit/ADR.md` line 36: `torch/csrc/jit/ADR.md` will resolve once `src/torch/csrc/jit/ADR.md` is written
+- Broken link in `src/torch/ao/ADR.md` line 35: `torch/fx/ADR.md` will resolve once `src/torch/fx/ADR.md` is written
+- Broken link in `src/torchgen/ADR.md` line 35: `aten/src/ATen/native/ADR.md` will resolve once `src/aten/src/ATen/native/ADR.md` is written
+- Broken link in `src/torchgen/ADR.md` line 36: `torch/csrc/ADR.md` will resolve once `src/torch/csrc/ADR.md` is written
+- Broken link in `src/torchgen/ADR.md` line 37: `aten/src/ATen/ADR.md` will resolve once `src/aten/src/ATen/ADR.md` is written
+- Broken link in `src/functorch/ADR.md` line 34: `torch/_functorch/ADR.md` will resolve once `src/torch/_functorch/ADR.md` is written
+- Broken link in `src/functorch/ADR.md` line 36: `torch/fx/ADR.md` will resolve once `src/torch/fx/ADR.md` is written
+- Broken link in `src/tools/autograd/ADR.md` line 35: `aten/src/ATen/native/ADR.md` will resolve once `src/aten/src/ATen/native/ADR.md` is written
+- Broken link in `src/tools/autograd/ADR.md` line 37: `torch/csrc/autograd/ADR.md` will resolve once `src/torch/csrc/autograd/ADR.md` is written
 
-**Check 5 — Write ADRs for all book-named subsystems without coverage:**
+**Check 5 — Write ADRs for all 21 book-named subsystems without coverage:**
 - Write `src/c10/core/ADR.md` covering TensorImpl, StorageImpl, Allocator interface, CPUAllocator (Ch.03, Ch.08 — Runtime Critical, State Owner)
 - Write `src/c10/util/ADR.md` covering intrusive_ptr, SmallVector, error utilities (Ch.03)
-- Write `src/c10/cuda/ADR.md` covering CUDACachingAllocator, CUDA streams (Ch.08 — Performance Sensitive; source-verified only under CPU-only constraint)
+- Write `src/c10/cuda/ADR.md` covering CUDACachingAllocator, CUDA streams (Ch.08 — Performance Sensitive; CPU-only build: source-verified structure only)
 - Write `src/aten/src/ATen/ADR.md` covering TensorIterator, RecordFunction, and the ATen public header surface (Ch.04, Ch.10 — Runtime Critical)
 - Write `src/aten/src/ATen/core/ADR.md` covering Dispatcher, OperatorEntry, DispatchKeySet, boxing (Ch.05 — Runtime Critical, Coordination Heavy)
 - Write `src/aten/src/ATen/native/ADR.md` covering operator kernel registration, native_functions.yaml, structured kernels (Ch.04 — Runtime Critical)
