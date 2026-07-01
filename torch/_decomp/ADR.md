@@ -1,0 +1,40 @@
+# ADR: torch/_decomp decomposition registry
+
+- Status: Draft
+- Date: 2026-07-01
+- Scope: `src/torch/_decomp`
+- Decision: Centralize operator decompositions in a registry that can serve export, compiler, autograd-adjacent, and meta execution flows.
+- Primary entrypoints: `register_decomposition`, `get_decompositions`, post-autograd table, pre-autograd table, meta table
+- Evidence: `src/torch/_decomp/__init__.py`, `src/torch/_decomp/decompositions.py`, `src/torch/_decomp/decompositions_for_jvp.py`, `src/torch/_decomp/decompositions_for_rng.py`
+- Caveats: Decomposition registration deliberately filters out overloads that do not have dispatcher kernels.
+
+## Role
+
+`torch._decomp` is the central Python registry for lowering complex operators into simpler ones. `src/torch/_decomp/__init__.py` defines separate global tables for post-autograd, pre-autograd, and meta decompositions, while `src/torch/_decomp/decompositions.py` supplies a large body of actual lowering rules for ATen operators.
+
+## Key Files
+
+- [`src/torch/_decomp/__init__.py`](src/torch/_decomp/__init__.py) - registry tables and registration decorators.
+- [`src/torch/_decomp/decompositions.py`](src/torch/_decomp/decompositions.py) - main ATen decomposition definitions.
+- [`src/torch/_decomp/decompositions_for_jvp.py`](src/torch/_decomp/decompositions_for_jvp.py) - JVP-oriented rules.
+- [`src/torch/_decomp/decompositions_for_rng.py`](src/torch/_decomp/decompositions_for_rng.py) - RNG-oriented rules.
+
+## Public Interface
+
+The directory exposes `register_decomposition`, `get_decompositions`, `decomposition_table`, `pre_autograd_decomposition_table`, and `meta_table` from `src/torch/_decomp/__init__.py`. Those entrypoints are intentionally programmatic rather than end-user-facing because callers are usually export, compile, or backend-lowering code that wants a decomposition map keyed by operator overload.
+
+## Dependencies
+
+The registry depends on dispatcher and operator metadata from [`src/torch/_C/__init__.pyi.in`](src/torch/_C/__init__.pyi.in) and `torch._ops`. The concrete decomposition bodies rely on [`src/torch/_prims/__init__.py`](src/torch/_prims/__init__.py), [`src/torch/_refs/__init__.py`](src/torch/_refs/__init__.py), and [`src/torch/_prims_common`](src/torch/_prims_common). Export-specific consumers also connect back from [`src/torch/export/exported_program.py`](src/torch/export/exported_program.py).
+
+## Runtime Behaviour
+
+`src/torch/_decomp/__init__.py` registers decompositions by overload, packet, or higher-order operator, and it rejects duplicate registrations in a single registry. The same file also rewrites functions with custom out parameters so decomposition signatures still match dispatcher expectations, and it only records overloads that actually have kernels according to `_dispatch_has_kernel()`. `src/torch/_decomp/decompositions.py` then uses the decorator to define math-level replacements such as `tanh_backward`, `sigmoid_backward`, and `fill` variants.
+
+## Performance Profile
+
+Decompositions add work during tracing, export, or backend preparation because they expand or rewrite graphs before execution. That extra normalization often removes far more backend complexity than it adds, which improves downstream compiler coverage and reduces the number of kernels that need bespoke handling. Meta decompositions are especially performance-relevant for analysis flows because they let shape-only execution avoid real compute.
+
+## Design Rationale
+
+This registry is one of the glue layers behind Chapter 09's compile stack. PyTorch needs a consistent place to say "treat this op as these simpler ops" so export, fake tensor execution, AOTAutograd, and backend lowering all converge on the same semantics instead of inventing incompatible local rewrite sets.
