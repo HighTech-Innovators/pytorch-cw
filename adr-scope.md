@@ -4,18 +4,20 @@
 |---|---|---|---|
 | ./adr | EXCLUDED | yes | Build/config only |
 | ./android | EXCLUDED | yes | Build/config only |
-| ./aten | EXCLUDED | yes | Leaf with no architectural boundary |
-| ./aten/src | EXCLUDED | yes | Leaf with no architectural boundary |
+| ./aten | COVERED | yes |  |
+| ./aten/src | COVERED | yes |  |
 | ./aten/src/ATen | COVERED | yes |  |
 | ./aten/src/ATen/core | COVERED | yes |  |
 | ./aten/src/ATen/native | COVERED | yes |  |
-| ./benchmarks | EXCLUDED | yes | Leaf with no architectural boundary |
-| ./binaries | EXCLUDED | yes | Leaf with no architectural boundary |
-| ./c10 | EXCLUDED | yes | Leaf with no architectural boundary |
+| ./benchmarks | EXCLUDED | yes | Test suite |
+| ./binaries | EXCLUDED | yes | Test suite |
+| ./c10 | COVERED | yes |  |
 | ./c10/core | COVERED | yes |  |
 | ./c10/cuda | COVERED | yes |  |
+| ./c10/macros | COVERED | yes |  |
 | ./c10/util | COVERED | yes |  |
-| ./caffe2 | EXCLUDED | yes | Leaf with no architectural boundary |
+| ./c10/xpu | COVERED | yes |  |
+| ./caffe2 | COVERED | yes |  |
 | ./caffe2/serialize | COVERED | yes |  |
 | ./cmake | EXCLUDED | yes | Build/config only |
 | ./docs | EXCLUDED | yes | Leaf with no architectural boundary |
@@ -24,10 +26,10 @@
 | ./scripts | EXCLUDED | yes | Build/config only |
 | ./test | EXCLUDED | yes | Test suite |
 | ./third_party | EXCLUDED | yes | Vendored/third-party |
-| ./tools | EXCLUDED | yes | Leaf with no architectural boundary |
+| ./tools | COVERED | yes |  |
 | ./tools/autograd | COVERED | yes |  |
 | ./tools/setup_helpers | COVERED | yes |  |
-| ./torch | EXCLUDED | yes | Leaf with no architectural boundary |
+| ./torch | COVERED | yes |  |
 | ./torch/_C | COVERED | yes |  |
 | ./torch/_decomp | COVERED | yes |  |
 | ./torch/_dynamo | COVERED | yes |  |
@@ -35,6 +37,7 @@
 | ./torch/_inductor | COVERED | yes |  |
 | ./torch/_prims | COVERED | yes |  |
 | ./torch/_refs | COVERED | yes |  |
+| ./torch/_subclasses | COVERED | yes |  |
 | ./torch/ao | COVERED | yes |  |
 | ./torch/autograd | COVERED | yes |  |
 | ./torch/csrc | COVERED | yes |  |
