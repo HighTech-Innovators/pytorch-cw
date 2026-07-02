@@ -459,12 +459,32 @@ void cpu_flash_attention(
       /* qk_sum */ qSplitSize +
       /* dst    */ qSplitSize * headSize;
 
-  at::Tensor buf = at::empty({num_thread, size_per_thread}, query.options().dtype(accumulate_dtype));
-  at::Tensor buf_reduced = at::empty(
-    {num_thread,
-     qSplitSize,
-     is_reduced_type ? ekvSplitSize : 0},
-     query.options());
+  // Reuse the per-thread scratch across invocations. buf and buf_reduced are
+  // pure scratch: every element the kernel reads is initialized first within
+  // the same call (fill_stub for qk_max/qk_sum, gemm with beta=0 for qk and
+  // dst), so a cached buffer that is only grown and never shrunk is
+  // bit-identical to a fresh at::empty() while avoiding the malloc/free of this
+  // block on each of the many short attention calls. Allocation happens on the
+  // calling thread before parallel_for; the workers use the raw buf_data
+  // pointer captured below, so the thread_local cache is never touched
+  // concurrently.
+  const int64_t buf_size = num_thread * size_per_thread;
+  const int64_t buf_reduced_size =
+      num_thread * qSplitSize * (is_reduced_type ? ekvSplitSize : 0);
+  static thread_local at::Tensor buf_cache;
+  static thread_local at::Tensor buf_reduced_cache;
+  if (!buf_cache.defined() || buf_cache.scalar_type() != accumulate_dtype ||
+      buf_cache.numel() < buf_size) {
+    buf_cache = at::empty({buf_size}, query.options().dtype(accumulate_dtype));
+  }
+  if (buf_reduced_size > 0 &&
+      (!buf_reduced_cache.defined() ||
+       buf_reduced_cache.scalar_type() != dtype ||
+       buf_reduced_cache.numel() < buf_reduced_size)) {
+    buf_reduced_cache = at::empty({buf_reduced_size}, query.options());
+  }
+  at::Tensor& buf = buf_cache;
+  at::Tensor& buf_reduced = buf_reduced_cache;
 
   // Data ptrs
   const scalar_t* q_data = query.const_data_ptr<scalar_t>();
